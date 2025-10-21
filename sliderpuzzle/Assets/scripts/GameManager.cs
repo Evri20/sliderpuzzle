@@ -9,6 +9,7 @@ public class GameManager : MonoBehaviour {
     private List<Transform> pieces;
     private int emptyLocation;
     private int size;
+    private bool shuffling = false;
 
     // create the game setup with size x size pieces.
     private void CreateGamePieces(float gapThickness) {
@@ -55,6 +56,11 @@ public class GameManager : MonoBehaviour {
     // Update is called once per frame
     void Update()
     {
+        // check for copletion
+        if (!shuffling && CheckCompletion()) {
+            shuffling = true;
+            StartCoroutine(WaitShuffle(0.5f));
+        }
         // on click send out ray to see if we click a piece.
         if (Input.GetMouseButtonDown(0)) {
             RaycastHit2D hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
@@ -88,14 +94,42 @@ public class GameManager : MonoBehaviour {
         return false;
     } 
 
+    // naem the pieces in order to use to check completion
+    private bool CheckCompletion() {
+        for (int i = 0; i < pieces.Count; i++) {
+            if (pieces[i].name != $"{i}") {
+                return false;
+            }
+        }
+        return true;
+    }
 
+    private IEnumerator WaitShuffle(float duration) {
+        yield return new WaitForSeconds(duration);
+        Shuffle();
+        shuffling = false;
+    }
 
-
-
-
-
-
-
-
-
+    // brute force shuffling
+    private void Shuffle() {
+        int count = 0;
+        int last = 0;
+        while (count < (size * size)) {
+            //pick random location
+            int rnd = Random.Range(0, size * size);
+            //only thing to forbid is the last move
+            if (rnd == last) { continue; }
+            last = emptyLocation;
+            // try surrounding spaces for valid move
+            if (SwapIfValid(rnd, -size, size)) {
+                count++;
+            } else if (SwapIfValid(rnd, +size, size)) {
+              count++;  
+            } else if (SwapIfValid(rnd, -1, 0)) {
+              count++;  
+            } else if (SwapIfValid(rnd, +1, size - 1)) {
+              count++;  
+            }
+        }
+    }
 }
